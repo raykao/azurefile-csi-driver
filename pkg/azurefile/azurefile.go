@@ -498,7 +498,7 @@ func IsCorruptedDir(dir string) bool {
 
 // GetAccountInfo get account info
 // return <rgName, accountName, accountKey, fileShareName, diskName, err>
-func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]string) (string, string, string, string, string, error) {
+func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]string) (string, string, string, string, string, string, error) {
 	rgName, accountName, fileShareName, diskName, err := GetFileShareInfo(volumeID)
 	if err != nil {
 		// ignore volumeID parsing error
@@ -506,12 +506,14 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 		err = nil
 	}
 
-	var protocol, accountKey, secretName, secretNamespace string
+	var protocol, accountKey, secretName, secretNamespace, subscription string
 	// indicates whether get account key only from k8s secret
 	getAccountKeyFromSecret := false
 
 	for k, v := range reqContext {
 		switch strings.ToLower(k) {
+		case subscriptionIdField:
+			subscription = v
 		case resourceGroupField:
 			rgName = v
 		case storageAccountField:
@@ -536,6 +538,10 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 				secretNamespace = v
 			}
 		}
+	}
+
+	if subscription == "" {
+		subscription = d.cloud.SubscriptionID
 	}
 
 	if rgName == "" {
@@ -582,7 +588,7 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 	if err == nil && accountKey != "" {
 		d.accountMap.Store(accountName, accountKey)
 	}
-	return rgName, accountName, accountKey, fileShareName, diskName, err
+	return rgName, accountName, accountKey, fileShareName, diskName, subscription, err
 }
 
 func isSupportedProtocol(protocol string) bool {
