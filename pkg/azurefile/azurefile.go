@@ -497,7 +497,7 @@ func IsCorruptedDir(dir string) bool {
 }
 
 // GetAccountInfo get account info
-// return <rgName, accountName, accountKey, fileShareName, diskName, err>
+// return <rgName, accountName, accountKey, fileShareName, diskName, subscriptionId, err>
 func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]string) (string, string, string, string, string, string, error) {
 	rgName, accountName, fileShareName, diskName, err := GetFileShareInfo(volumeID)
 	if err != nil {

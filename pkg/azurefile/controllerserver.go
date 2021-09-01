@@ -475,7 +475,7 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	if len(secret) == 0 {
 		// use data plane api, get account key first
 		if d.useDataPlaneAPI(volumeID, accountName) {
-			_, _, accountKey, _, _, err := d.GetAccountInfo(volumeID, req.GetSecrets(), map[string]string{})
+			_, _, accountKey, _, _, _, err := d.GetAccountInfo(volumeID, req.GetSecrets(), map[string]string{})
 			if err != nil {
 				return nil, status.Errorf(codes.NotFound, "get account info from(%s) failed with error: %v", volumeID, err)
 			}
@@ -517,7 +517,7 @@ func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 		return nil, status.Error(codes.InvalidArgument, "Volume capabilities not provided")
 	}
 
-	resourceGroupName, accountName, _, fileShareName, diskName, err := d.GetAccountInfo(volumeID, req.GetSecrets(), req.GetVolumeContext())
+	resourceGroupName, accountName, _, fileShareName, diskName, _, err := d.GetAccountInfo(volumeID, req.GetSecrets(), req.GetVolumeContext())
 	if err != nil || accountName == "" || fileShareName == "" {
 		return nil, status.Errorf(codes.NotFound, "get account info from(%s) failed with error: %v", volumeID, err)
 	}
@@ -578,7 +578,7 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	}
 
 	volContext := req.GetVolumeContext()
-	_, accountName, accountKey, fileShareName, diskName, err := d.GetAccountInfo(volumeID, req.GetSecrets(), volContext)
+	_, accountName, accountKey, fileShareName, diskName, _, err := d.GetAccountInfo(volumeID, req.GetSecrets(), volContext)
 	// always check diskName first since if it's not vhd disk attach, ControllerPublishVolume is not necessary
 	if diskName == "" {
 		klog.V(2).Infof("skip ControllerPublishVolume(%s) since it's not vhd disk attach", volumeID)
@@ -647,7 +647,7 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 		return nil, status.Error(codes.InvalidArgument, "Node ID not provided")
 	}
 
-	_, accountName, accountKey, fileShareName, diskName, err := d.GetAccountInfo(volumeID, req.GetSecrets(), map[string]string{})
+	_, accountName, accountKey, fileShareName, diskName, _, err := d.GetAccountInfo(volumeID, req.GetSecrets(), map[string]string{})
 	// always check diskName first since if it's not vhd disk detach, ControllerUnpublishVolume is not necessary
 	if diskName == "" {
 		klog.V(2).Infof("skip ControllerUnpublishVolume(%s) since it's not vhd disk detach", volumeID)
@@ -831,7 +831,7 @@ func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	secrets := req.GetSecrets()
 	if len(secrets) == 0 && d.useDataPlaneAPI(volumeID, accountName) {
 		// use data plane api, get account key first
-		_, _, accountKey, _, _, err := d.GetAccountInfo(volumeID, secrets, map[string]string{})
+		_, _, accountKey, _, _, _, err := d.GetAccountInfo(volumeID, secrets, map[string]string{})
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "get account info from(%s) failed with error: %v", volumeID, err)
 		}
@@ -863,7 +863,7 @@ func (d *Driver) getShareURL(sourceVolumeID string, secrets map[string]string) (
 }
 
 func (d *Driver) getServiceURL(sourceVolumeID string, secrets map[string]string) (azfile.ServiceURL, string, error) {
-	_, accountName, accountKey, fileShareName, _, err := d.GetAccountInfo(sourceVolumeID, secrets, map[string]string{})
+	_, accountName, accountKey, fileShareName, _, _, err := d.GetAccountInfo(sourceVolumeID, secrets, map[string]string{})
 	if err != nil {
 		return azfile.ServiceURL{}, "", err
 	}
