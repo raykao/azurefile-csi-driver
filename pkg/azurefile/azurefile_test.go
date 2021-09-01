@@ -603,15 +603,17 @@ func TestGetAccountInfo(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	tests := []struct {
-		volumeID            string
-		rgName              string
-		secrets             map[string]string
-		reqContext          map[string]string
-		expectErr           bool
-		err                 error
-		expectAccountName   string
-		expectFileShareName string
-		expectDiskName      string
+		volumeID             string
+		rgName               string
+		secrets              map[string]string
+		reqContext           map[string]string
+		subscriptionId       string
+		expectErr            bool
+		err                  error
+		expectAccountName    string
+		expectFileShareName  string
+		expectDiskName       string
+		expectSubscriptionId string
 	}{
 		{
 			volumeID: "##",
@@ -621,11 +623,13 @@ func TestGetAccountInfo(t *testing.T) {
 				shareNameField: "test_sharename",
 				diskNameField:  "test_diskname",
 			},
-			expectErr:           false,
-			err:                 nil,
-			expectAccountName:   "",
-			expectFileShareName: "test_sharename",
-			expectDiskName:      "test_diskname",
+			subscriptionId:       d.cloud.SubscriptionID,
+			expectErr:            false,
+			err:                  nil,
+			expectAccountName:    "",
+			expectFileShareName:  "test_sharename",
+			expectDiskName:       "test_diskname",
+			expectSubscriptionId: d.cloud.SubscriptionID,
 		},
 		{
 			volumeID: "vol_1##",
@@ -635,11 +639,13 @@ func TestGetAccountInfo(t *testing.T) {
 				shareNameField: "test_sharename",
 				diskNameField:  "test_diskname",
 			},
-			expectErr:           false,
-			err:                 nil,
-			expectAccountName:   "testaccount",
-			expectFileShareName: "test_sharename",
-			expectDiskName:      "test_diskname",
+			subscriptionId:       d.cloud.SubscriptionID,
+			expectErr:            false,
+			err:                  nil,
+			expectAccountName:    "testaccount",
+			expectFileShareName:  "test_sharename",
+			expectDiskName:       "test_diskname",
+			expectSubscriptionId: d.cloud.SubscriptionID,
 		},
 		{
 			volumeID: "vol_2##",
@@ -649,11 +655,13 @@ func TestGetAccountInfo(t *testing.T) {
 				shareNameField: "test_sharename",
 				diskNameField:  "test_diskname",
 			},
-			expectErr:           false,
-			err:                 nil,
-			expectAccountName:   "",
-			expectFileShareName: "test_sharename",
-			expectDiskName:      "test_diskname",
+			subscriptionId:       d.cloud.SubscriptionID,
+			expectErr:            false,
+			err:                  nil,
+			expectAccountName:    "",
+			expectFileShareName:  "test_sharename",
+			expectDiskName:       "test_diskname",
+			expectSubscriptionId: d.cloud.SubscriptionID,
 		},
 		{
 			volumeID: "uniqe-volumeid-nfs",
@@ -665,11 +673,30 @@ func TestGetAccountInfo(t *testing.T) {
 				shareNameField:      "test_sharename",
 				protocolField:       "nfs",
 			},
-			expectErr:           false,
-			err:                 nil,
-			expectAccountName:   "test_accountname",
-			expectFileShareName: "test_sharename",
-			expectDiskName:      "",
+			subscriptionId:       d.cloud.SubscriptionID,
+			expectErr:            false,
+			err:                  nil,
+			expectAccountName:    "test_accountname",
+			expectFileShareName:  "test_sharename",
+			expectDiskName:       "",
+			expectSubscriptionId: d.cloud.SubscriptionID,
+		},
+		{
+			volumeID: "crosssubstorageacc",
+			rgName:   "crosssubstorageacc",
+			secrets:  emptySecret,
+			reqContext: map[string]string{
+				resourceGroupField:  "crosssubstorageacc",
+				storageAccountField: "test_accountname",
+				shareNameField:      "test_sharename",
+			},
+			subscriptionId:       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+			expectErr:            false,
+			err:                  nil,
+			expectAccountName:    "test_accountname",
+			expectFileShareName:  "test_sharename",
+			expectDiskName:       "",
+			expectSubscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 		},
 	}
 
@@ -679,7 +706,7 @@ func TestGetAccountInfo(t *testing.T) {
 		d.cloud.KubeClient = clientSet
 		d.cloud.Environment = azure2.Environment{StorageEndpointSuffix: "abc"}
 		mockStorageAccountsClient.EXPECT().ListKeys(gomock.Any(), test.rgName, gomock.Any()).Return(key, nil).AnyTimes()
-		rgName, accountName, _, fileShareName, diskName, err := d.GetAccountInfo(test.volumeID, test.secrets, test.reqContext)
+		rgName, accountName, _, fileShareName, diskName, subscriptionId, err := d.GetAccountInfo(test.volumeID, test.secrets, test.reqContext)
 		if test.expectErr && err == nil {
 			t.Errorf("Unexpected non-error")
 			continue
@@ -694,6 +721,7 @@ func TestGetAccountInfo(t *testing.T) {
 			assert.Equal(t, test.expectAccountName, accountName, test.volumeID)
 			assert.Equal(t, test.expectFileShareName, fileShareName, test.volumeID)
 			assert.Equal(t, test.expectDiskName, diskName, test.volumeID)
+			assert.Equal(t, test.expectSubscriptionId, subscriptionId, test.subscriptionId)
 		}
 	}
 }

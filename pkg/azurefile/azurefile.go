@@ -506,14 +506,14 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 		err = nil
 	}
 
-	var protocol, accountKey, secretName, secretNamespace, subscription string
+	var protocol, accountKey, secretName, secretNamespace, subscriptionId string
 	// indicates whether get account key only from k8s secret
 	getAccountKeyFromSecret := false
 
 	for k, v := range reqContext {
 		switch strings.ToLower(k) {
 		case subscriptionIdField:
-			subscription = v
+			subscriptionId = v
 		case resourceGroupField:
 			rgName = v
 		case storageAccountField:
@@ -540,8 +540,8 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 		}
 	}
 
-	if subscription == "" {
-		subscription = d.cloud.SubscriptionID
+	if subscriptionId == "" {
+		subscriptionId = d.cloud.SubscriptionID
 	}
 
 	if rgName == "" {
@@ -549,7 +549,7 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 	}
 	if protocol == nfs && fileShareName != "" {
 		// nfs protocol does not need account key, return directly
-		return rgName, accountName, accountKey, fileShareName, diskName, err
+		return rgName, accountName, accountKey, fileShareName, diskName, subscriptionId, err
 	}
 
 	// backward compatibility, old CSI driver PV does not have secretNamespace field
@@ -588,7 +588,7 @@ func (d *Driver) GetAccountInfo(volumeID string, secrets, reqContext map[string]
 	if err == nil && accountKey != "" {
 		d.accountMap.Store(accountName, accountKey)
 	}
-	return rgName, accountName, accountKey, fileShareName, diskName, subscription, err
+	return rgName, accountName, accountKey, fileShareName, diskName, subscriptionId, err
 }
 
 func isSupportedProtocol(protocol string) bool {
